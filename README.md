@@ -6,16 +6,20 @@
   <img src="https://img.shields.io/github/license/knuspii/homelab-doctor" />
 </p>
 
+<div align="center">
+  <img src="assets/homelab-doctor_logo.png" width="200" height="200" alt="Preview">
+</div>
+
 You quickly wanna check your server, but don't want to use 10+ tools to check everything? \
 Well this script will help you with checking the most important things.
 
 ## Supports
-- CPU, RAM, Disk checks
-- DNS checks
-- NTP checks
-- RAID checks
-- Package update checks
-- Docker, Podman, Kubernetes
+- Checks: CPU, RAM, Disk
+- Checks: DNS
+- Checks: NTP
+- Checks: RAID
+- Checks: Package update
+- Checks: Docker, Podman, Kubernetes
 
 ## 📥 How to install:
 Latest Release:
