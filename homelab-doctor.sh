@@ -22,11 +22,12 @@ warn(){ echo -e "${YELLOW}[WARN]${RESET} $1"; (( ++WARN_COUNT )); }
 echo -e "${BLUE}      __         ___            __      __   __   __  ___  __   __"
 echo '|__| /  \  |\/| |__  |     /\  |__) __ |  \ /  \ /  `  |  /  \ |__)'
 echo '|  | \__/  |  | |___ |___ /~~\ |__)    |__/ \__/ \__,  |  \__/ |  '\\
+echo ""
 echo "${VERSION}"
 echo "Made by Knuspii"
 echo -e "${RESET}---"
-
-# ---------------- CPU RAM DISK ----------------
+sleep 1
+# ---------------- CPU, RAM, DISK ----------------
 load=$(awk '{print $1}' /proc/loadavg)
 cores=$(nproc)
 
@@ -101,7 +102,7 @@ else
     ok "No reboot required"
 fi
 
-# ---------------- RAID / ZFS ----------------
+# ---------------- RAID, ZFS ----------------
 if [[ -f /proc/mdstat ]]; then
     if grep -qE '\[.*_.*\]' /proc/mdstat; then
         warn "Software RAID degraded"
@@ -176,6 +177,19 @@ for pm in "${!managers[@]}"; do
     fi
 done
 
+# ---------------- SYSTEMD SERVICES ----------------
+if command -v systemctl >/dev/null; then
+    failed_services=$(systemctl list-units --state=failed --plain --no-legend 2>/dev/null | awk '{print $1}' || true)
+    
+    if [[ -z "${failed_services}" ]]; then
+        ok "All Systemd services running fine"
+    else
+        warn "Failed Systemd services: $(echo "${failed_services}" | tr '\n' ' ')"
+    fi
+else
+    ignore "systemctl not available"
+fi
+
 # ---------------- DOCKER ----------------
 if command -v docker >/dev/null; then
     if docker info >/dev/null 2>&1; then
@@ -189,10 +203,10 @@ if command -v docker >/dev/null; then
             warn "Docker unhealthy containers: ${unhealthy}"
         fi
     else
-        warn "Docker installed but not accessible (daemon or permissions issue)"
+        warn "docker installed but not accessible (daemon or permissions issue)"
     fi
 else
-    ignore "Docker not installed"
+    ignore "docker not installed"
 fi
 
 # ---------------- PODMAN ----------------
@@ -202,10 +216,10 @@ if command -v podman >/dev/null; then
         ok "Podman is working"
         ok "Podman containers running: ${running}"
     else
-        warn "Podman installed but not working"
+        warn "podman installed but not working"
     fi
 else
-    ignore "Podman not installed"
+    ignore "podman not installed"
 fi
 
 # ---------------- KUBERNETES ----------------
