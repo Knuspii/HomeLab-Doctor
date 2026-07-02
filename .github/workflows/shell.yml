@@ -1,0 +1,32 @@
+name: Quality Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  syntax-check:
+    name: Bash syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Bash syntax check
+        run: bash -n homelab-doctor.sh
+
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck
+        run: bash shellcheck.sh
