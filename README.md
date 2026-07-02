@@ -15,14 +15,13 @@ Well this script will help you with checking the most important things.
 
 ## Supports
 - Checks: CPU, RAM, Disk
-- Checks: DNS
-- Checks: NTP
-- Checks: RAID
+- Checks: NTP, DNS, Firewall
+- Checks: RAID, ZFS
 - Checks: Package update
 - Checks: Docker, Podman, Kubernetes
 
 ## 📥 How to install:
 Latest Release:
 ```bash
-sudo curl -fsSL https://raw.githubusercontent.com/knuspii/homelab-doctor/main/homelab-doctor.sh -o /usr/local/bin/homelab-doctor && sudo chmod +x /usr/local/bin/homelab-doctor
+curl -L https://github.com/Knuspii/HomeLab-Doctor/releases/latest/download/homelab-doctor.sh -o hd && sudo install -m 755 hd /usr/local/bin/homelab-doctor && rm hd
 ```
