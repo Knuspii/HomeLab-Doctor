@@ -9,7 +9,6 @@ set -euo pipefail
 VERSION="v0.1"
 GREEN="\033[32m"
 YELLOW="\033[33m"
-RED="\033[31m"
 BLUE="\033[34m"
 RESET="\033[0m"
 GREY="\033[90m"
@@ -75,7 +74,7 @@ done < <(df -P -x tmpfs -x devtmpfs | tail -n +2)
 
 # ---------------- DNS ----------------
 if command -v getent >/dev/null; then
-    if getent hosts go.devapt >/dev/null 2>&1; then
+    if getent hosts go.dev >/dev/null 2>&1; then
         ok "DNS resolution working"
     else
         warn "DNS resolution failed"
