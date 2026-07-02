@@ -12,13 +12,13 @@ YELLOW="\033[33m"
 RED="\033[31m"
 BLUE="\033[34m"
 RESET="\033[0m"
+GREY="\033[90m"
 WARN_COUNT=0
-CRIT_COUNT=0
 
+ignore(){ echo -e "${GREY}[IGNORE] $1 ${RESET}"; }
 info(){ echo -e "${BLUE}[INFO]${RESET} $1"; }
 ok(){ echo -e "${GREEN}[OK]${RESET} $1"; }
-warn(){ echo -e "${YELLOW}[WARN]${RESET} $1"; (( WARN_COUNT++ )); }
-crit(){ echo -e "${RED}[FAIL]${RESET} $1"; (( CRIT_COUNT++ )); }
+warn(){ echo -e "${YELLOW}[WARN]${RESET} $1"; (( ++WARN_COUNT )); }
 
 echo -e "${BLUE}      __         ___            __      __   __   __  ___  __   __"
 echo '|__| /  \  |\/| |__  |     /\  |__) __ |  \ /  \ /  `  |  /  \ |__)'
@@ -27,7 +27,7 @@ echo "${VERSION}"
 echo "Made by Knuspii"
 echo -e "${RESET}---"
 
-# ---------------- CPU ----------------
+# ---------------- CPU RAM DISK ----------------
 load=$(awk '{print $1}' /proc/loadavg)
 cores=$(nproc)
 
@@ -37,7 +37,6 @@ else
     warn "High CPU load: ${load}/${cores}"
 fi
 
-# ---------------- RAM ----------------
 mem_total=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
 mem_available=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
 
@@ -51,18 +50,15 @@ if [[ -n "${mem_total}" && -n "${mem_available}" ]]; then
         warn "RAM usage: ${mem_pct}%"
     fi
 else
-    crit "Unable to determine RAM usage"
+    warn "Unable to determine RAM usage"
 fi
 
-# ---------------- DISK ----------------
 EXCLUDES="tmpfs|devtmpfs|efivarfs|overlay|squashfs|proc|sysfs"
-df -P -x tmpfs -x devtmpfs | tail -n +2 | while read -r fs _ _ _ pct mount; do
-    # skip unwanted mounts
+while read -r fs _ _ _ pct mount; do
     if echo "${fs}" | grep -Eq "${EXCLUDES}"; then
         continue
     fi
 
-    # skip docker / system noise mounts
     case "${mount}" in
         /boot|/boot/efi|/var/lib/docker|/var/lib/containers|/run|/sys|/proc)
             continue
@@ -70,23 +66,22 @@ df -P -x tmpfs -x devtmpfs | tail -n +2 | while read -r fs _ _ _ pct mount; do
     esac
 
     usage=${pct%\%}
-    if [[ "${usage}" -lt 85 ]]; then
+    if [[ "${usage}" -lt 90 ]]; then
         ok "Disk ${mount}: ${pct} used"
     else
         warn "Disk ${mount}: ${pct} used"
     fi
-
-done
+done < <(df -P -x tmpfs -x devtmpfs | tail -n +2)
 
 # ---------------- DNS ----------------
 if command -v getent >/dev/null; then
-    if getent hosts go.dev >/dev/null 2>&1; then
+    if getent hosts go.devapt >/dev/null 2>&1; then
         ok "DNS resolution working"
     else
-        crit "DNS resolution failed"
+        warn "DNS resolution failed"
     fi
 else
-    info "getent not available"
+    ignore "getent not available"
 fi
 
 # ---------------- NTP ----------------
@@ -97,7 +92,7 @@ if command -v timedatectl >/dev/null; then
         warn "NTP not synchronized"
     fi
 else
-    info "timedatectl not available"
+    ignore "timedatectl not available"
 fi
 
 # ---------------- REBOOT ----------------
@@ -107,41 +102,38 @@ else
     ok "No reboot required"
 fi
 
-# ---------------- RAID ----------------
+# ---------------- RAID / ZFS ----------------
 if [[ -f /proc/mdstat ]]; then
     if grep -qE '\[.*_.*\]' /proc/mdstat; then
-        crit "Software RAID degraded"
+        warn "Software RAID degraded"
     elif grep -q '^md' /proc/mdstat; then
         ok "Software RAID healthy"
     else
-        info "No active RAID detected"
+        warn "Config found but no active RAID detected"
     fi
 else
-    info "No RAID support detected"
+    ignore "No RAID support detected"
 fi
 
-# ---------------- ZFS ----------------
 if command -v zpool >/dev/null; then
     if zpool status -x | grep -q "all pools are healthy"; then
         ok "ZFS pools healthy"
     else
-        crit "ZFS pool issue detected"
+        warn "ZFS pool issue detected"
     fi
 else
-    info "No ZFS support detected"
+    ignore "No ZFS support detected"
 fi
 
-# ---------------- OPEN PORTS ----------------
+# ---------------- OPEN PORTS / FIREWALL ----------------
 if command -v ss >/dev/null; then
     ports=$(ss -tulnH | awk '{print $5}' | awk -F: '{print $NF}' | sort -n | uniq | tr '\n' ' ')
     info "Open ports: ${ports:-none}"
 else
-    info "ss not available"
+    ignore "ss not available"
 fi
 
-# ---------------- FIREWALL ----------------
 if command -v ufw >/dev/null; then
-    # UFW Status needs root
     ufw_status=$(ufw status 2>/dev/null || true)
     if echo "${ufw_status}" | grep -q "Status: active"; then
         ok "Firewall (UFW): active"
@@ -157,7 +149,7 @@ elif command -v firewall-cmd >/dev/null; then
         warn "Firewall (Firewalld): INACTIVE"
     fi
 else
-    info "Firewall: No standard manager detected"
+    ignore "Firewall: No standard manager detected"
 fi
 
 # ---------------- PACKAGE UPDATES ----------------
@@ -170,15 +162,18 @@ declare -A managers=(
 
 for pm in "${!managers[@]}"; do
     if command -v "${pm}" >/dev/null; then
-        count=$(eval "${managers[${pm}]}" || echo 0)
-        # If updates > 0 = warn
+        raw_count=$(eval "${managers[${pm}]}" 2>/dev/null || echo 0)
+        count=$(echo "${raw_count}" | tr -d '\r[:space:]')
+        
+        : "${count:=0}"
+
         if [[ "${count}" -gt 0 ]]; then
             warn "Updates (${pm}): ${count}"
         else
             info "Updates (${pm}): ${count}"
         fi
     else
-        info "${pm} not installed"
+        ignore "${pm} not installed"
     fi
 done
 
@@ -198,7 +193,7 @@ if command -v docker >/dev/null; then
         warn "Docker installed but not accessible (daemon or permissions issue)"
     fi
 else
-    info "Docker not installed"
+    ignore "Docker not installed"
 fi
 
 # ---------------- PODMAN ----------------
@@ -211,22 +206,26 @@ if command -v podman >/dev/null; then
         warn "Podman installed but not working"
     fi
 else
-    info "Podman not installed"
+    ignore "Podman not installed"
 fi
 
 # ---------------- KUBERNETES ----------------
 if command -v kubectl >/dev/null; then
-    bad=$(kubectl get nodes --no-headers 2>/dev/null | grep -vc " Ready " || true)
-
-    if [[ "${bad}" -eq 0 ]]; then
-        ok "Kubernetes nodes healthy"
+    if kubectl get nodes --no-headers >/tmp/hd_k8s 2>/dev/null; then
+        bad=$(grep -vc " Ready " /tmp/hd_k8s || true)
+        rm -f /tmp/hd_k8s
+        if [[ "${bad}" -eq 0 ]]; then
+            ok "Kubernetes nodes healthy"
+        else
+            warn "Kubernetes unhealthy nodes: ${bad}"
+        fi
     else
-        warn "Kubernetes unhealthy nodes: ${bad}"
+        rm -f /tmp/hd_k8s
+        warn "kubectl installed but cluster not reachable"
     fi
 else
-    info "kubectl not installed"
+    ignore "kubectl not installed"
 fi
 
 echo "---"
 echo "Warnings: ${WARN_COUNT}"
-echo "Errors:   ${CRIT_COUNT}"
