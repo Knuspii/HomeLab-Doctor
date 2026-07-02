@@ -6,6 +6,9 @@
   <img src="https://img.shields.io/github/license/knuspii/homelab-doctor" />
 </p>
 
+You quickly wanna check your server, but don't want to use 10+ tools to check everything? \
+Well this script will help you with checking the most important things.
+
 ## Supports
 - CPU, RAM, Disk checks
 - DNS checks
@@ -17,5 +20,5 @@
 ## 📥 How to install:
 Latest Release:
 ```bash
-sudo curl -fsSL https://raw.githubusercontent.com/Knuspii/homelab-doctor/main/homelab-doctor.sh -o /usr/local/bin/homelab-doctor && sudo chmod +x /usr/local/bin/homelab-doctor
+sudo curl -fsSL https://raw.githubusercontent.com/knuspii/homelab-doctor/main/homelab-doctor.sh -o /usr/local/bin/homelab-doctor && sudo chmod +x /usr/local/bin/homelab-doctor
 ```
