@@ -145,7 +145,6 @@ sleep 1
 
 # ---------------- CPU, RAM, DISK ----------------
 debug "Checking CPU load..."
-
 load=$(awk '{print $1}' /proc/loadavg)
 cores=$(nproc)
 
@@ -155,9 +154,7 @@ else
     warn "High CPU load: ${load}/${cores}"
 fi
 
-
 debug "Checking RAM..."
-
 mem_total=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
 mem_available=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
 
@@ -174,11 +171,8 @@ else
     warn "Unable to determine RAM usage"
 fi
 
-
 debug "Checking disk usage..."
-
 EXCLUDES="tmpfs|devtmpfs|efivarfs|overlay|squashfs|proc|sysfs"
-
 while read -r fs _ _ _ pct mount; do
     if echo "${fs}" | grep -Eq "${EXCLUDES}"; then
         continue
@@ -199,7 +193,6 @@ while read -r fs _ _ _ pct mount; do
     fi
 done < <(df -P -x tmpfs -x devtmpfs | tail -n +2)
 
-
 # ---------------- DNS ----------------
 debug "Checking DNS resolution..."
 
@@ -212,7 +205,6 @@ if command -v getent >/dev/null; then
 else
     ignore "getent not available"
 fi
-
 
 # ---------------- NTP ----------------
 debug "Checking NTP synchronization..."
@@ -227,7 +219,6 @@ else
     ignore "timedatectl not available"
 fi
 
-
 # ---------------- REBOOT ----------------
 debug "Checking reboot requirement..."
 
@@ -236,7 +227,6 @@ if [[ -f /var/run/reboot-required ]]; then
 else
     ok "No reboot required"
 fi
-
 
 # ---------------- RAID, ZFS ----------------
 debug "Checking software RAID..."
@@ -253,9 +243,7 @@ else
     ignore "No RAID support detected"
 fi
 
-
 debug "Checking ZFS..."
-
 if command -v zpool >/dev/null; then
     if zpool status -x | grep -q "all pools are healthy"; then
         ok "ZFS pools healthy"
@@ -266,10 +254,8 @@ else
     ignore "No ZFS support detected"
 fi
 
-
 # ---------------- OPEN PORTS / FIREWALL ----------------
 debug "Checking open ports..."
-
 if command -v ss >/dev/null; then
     ports=$(ss -tulnH | awk '{print $5}' | awk -F: '{print $NF}' | sort -n | uniq | tr '\n' ' ')
     info "Open ports: ${ports:-none}"
@@ -277,9 +263,7 @@ else
     ignore "ss not available"
 fi
 
-
 debug "Checking firewall..."
-
 if command -v ufw >/dev/null; then
     ufw_status=$(ufw status 2>/dev/null || true)
 
@@ -303,10 +287,8 @@ else
     ignore "Firewall: No standard manager detected"
 fi
 
-
 # ---------------- PACKAGE UPDATES ----------------
 debug "Checking package updates..."
-
 declare -A managers=(
     [apt]="apt list --upgradable 2>/dev/null | tail -n +2 | wc -l"
     [dnf]="dnf check-update -q 2>/dev/null | wc -l"
@@ -334,10 +316,8 @@ for pm in "${!managers[@]}"; do
     fi
 done
 
-
 # ---------------- SYSTEMD SERVICES ----------------
 debug "Checking failed Systemd services..."
-
 if command -v systemctl >/dev/null; then
 
     failed_services=$(
@@ -359,10 +339,8 @@ else
     ignore "systemctl not available"
 fi
 
-
 # ---------------- DOCKER ----------------
 debug "Checking Docker..."
-
 if command -v docker >/dev/null; then
 
     if docker info >/dev/null 2>&1; then
@@ -385,10 +363,8 @@ else
     ignore "docker not installed"
 fi
 
-
 # ---------------- PODMAN ----------------
 debug "Checking Podman..."
-
 if command -v podman >/dev/null; then
 
     if podman info >/dev/null 2>&1; then
@@ -406,10 +382,8 @@ else
     ignore "podman not installed"
 fi
 
-
 # ---------------- KUBERNETES ----------------
 debug "Checking Kubernetes..."
-
 if command -v kubectl >/dev/null; then
 
     if kubectl get nodes --no-headers >/tmp/hd_k8s 2>/dev/null; then
@@ -435,8 +409,8 @@ else
     ignore "kubectl not installed"
 fi
 
-
 # ---------------- SUMMARY ----------------
+debug "Printing Summary..."
 echo "---"
 echo "Warnings: ${WARN_COUNT}"
 
