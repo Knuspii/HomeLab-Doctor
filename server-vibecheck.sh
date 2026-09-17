@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# HomeLab-Doctor
+# Server-VibeCheck
 # MIT License
 # Made by Knuspii
 # Made for HomeLabs with <3
 
 set -euo pipefail
 
-VERSION="v0.1"
+VERSION="v0.2"
 GREEN="\033[32m"
 YELLOW="\033[33m"
 BLUE="\033[34m"
@@ -19,9 +19,10 @@ info(){ echo -e "${BLUE}[INFO]${RESET} $1"; }
 ok(){ echo -e "${GREEN}[OK]${RESET} $1"; }
 warn(){ echo -e "${YELLOW}[WARN]${RESET} $1"; (( ++WARN_COUNT )); }
 
-echo -e "${BLUE}      __         ___            __      __   __   __  ___  __   __"
-echo '|__| /  \  |\/| |__  |     /\  |__) __ |  \ /  \ /  `  |  /  \ |__)'
-echo '|  | \__/  |  | |___ |___ /~~\ |__)    |__/ \__/ \__,  |  \__/ |  '\\
+echo -e "${BLUE}"
+echo "____ ____ ____ _  _ ____ ____    _  _ _ ___  ____ ____ _  _ ____ ____ _  _ "
+echo "[__  |___ |__/ |  | |___ |__/ __ |  | | |__] |___ |    |__| |___ |    |_/  "
+echo "___] |___ |  \  \/  |___ |  \     \/  | |__] |___ |___ |  | |___ |___ | \_ "
 echo ""
 echo "${VERSION}"
 echo "Made by Knuspii"
