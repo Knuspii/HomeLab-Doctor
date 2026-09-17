@@ -10,6 +10,7 @@
   <img src="assets/server-vibecheck_logo.png" width="200" height="200" alt="Preview">
 </div>
 
+<br>
 You quickly wanna check your server, but don't want to use 10+ tools to check everything? \
 Well this script will help you with checking the most important things.
 
