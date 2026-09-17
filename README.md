@@ -7,7 +7,7 @@
 </p>
 
 <div align="center">
-  <img src="assets/server-vibecheck_logo.png" width="200" height="200" alt="Preview">
+  <img src="assets/server-vibecheck_logo.png" width="400" height="400" alt="Preview">
 </div>
 
 <br>
