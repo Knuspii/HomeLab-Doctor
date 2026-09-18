@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-VERSION="v0.2"
+VERSION="v0.3"
 GREEN="\033[32m"
 YELLOW="\033[33m"
 BLUE="\033[34m"
@@ -16,27 +16,103 @@ WARN_COUNT=0
 DEBUG=false
 LOG_FILE=""
 
+# ---------------- SPINNER ----------------
+
+SPINNER_PID=""
+
+spinner_draw() {
+    if [[ -t 1 ]]; then
+        printf "\r\033[K%s" "${SPINNER_LINE:-Checking server...}"
+    fi
+}
+
+spinner_clear() {
+    if [[ -t 1 ]]; then
+        printf "\r\033[K"
+    fi
+}
+
+spinner() {
+    local dots=0
+
+    if [[ ! -t 1 ]]; then
+        return
+    fi
+
+    tput civis 2>/dev/null || true
+
+    while true; do
+        case "${dots}" in
+            0)
+                SPINNER_LINE="Checking server"
+                ;;
+            1)
+                SPINNER_LINE="Checking server."
+                ;;
+            2)
+                SPINNER_LINE="Checking server.."
+                ;;
+            3)
+                SPINNER_LINE="Checking server..."
+                ;;
+        esac
+
+        spinner_draw
+
+        dots=$(( (dots + 1) % 4 ))
+        sleep 0.2
+    done
+}
+
+start_spinner() {
+    if [[ -t 1 ]]; then
+        echo
+        spinner &
+        SPINNER_PID=$!
+    fi
+}
+
+stop_spinner() {
+    if [[ -n "${SPINNER_PID}" ]]; then
+        kill "${SPINNER_PID}" 2>/dev/null || true
+        wait "${SPINNER_PID}" 2>/dev/null || true
+        SPINNER_PID=""
+    fi
+
+    if [[ -t 1 ]]; then
+        spinner_clear
+        tput cnorm 2>/dev/null || true
+    fi
+}
+
+print_line() {
+    spinner_clear
+    printf "%b\n" "$1"
+    spinner_draw
+}
+
 # ---------------- FUNCTIONS ----------------
+
 ignore() {
-    echo -e "${GREY}[IGNORE] $1 ${RESET}"
+    print_line "${GREY}[IGNORE] $1 ${RESET}"
 }
 
 info() {
-    echo -e "${BLUE}[INFO]${RESET} $1"
+    print_line "${BLUE}[INFO]${RESET} $1"
 }
 
 ok() {
-    echo -e "${GREEN}[OK]${RESET} $1"
+    print_line "${GREEN}[OK]${RESET} $1"
 }
 
 warn() {
-    echo -e "${YELLOW}[WARN] $1 ${RESET}"
+    print_line "${YELLOW}[WARN] $1 ${RESET}"
     WARN_COUNT=$((WARN_COUNT + 1))
 }
 
 debug() {
     if [[ "${DEBUG}" == true ]]; then
-        echo -e "${GREY}[DEBUG] $1${RESET}"
+        print_line "${GREY}[DEBUG] $1${RESET}"
     fi
 }
 
@@ -70,6 +146,7 @@ version() {
 }
 
 # ---------------- ARGUMENT PARSING ----------------
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help)
@@ -83,6 +160,7 @@ while [[ $# -gt 0 ]]; do
                 shift 2
             else
                 LOG_FILE="/var/log/server-vibecheck.log"
+                echo "Using default path: ${LOG_FILE}"
                 shift
             fi
             ;;
@@ -116,7 +194,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Logging
+# ---------------- LOGGING ----------------
+
 if [[ -n "${LOG_FILE}" ]]; then
     if ! touch "${LOG_FILE}" 2>/dev/null; then
         echo "Error: Cannot write to log file: ${LOG_FILE}" >&2
@@ -124,26 +203,32 @@ if [[ -n "${LOG_FILE}" ]]; then
     fi
 
     exec > >(tee -a "${LOG_FILE}") 2>&1
+    echo ""
+    echo "####################################"
+    echo ""
+    date
 fi
 
 # ---------------- HEADER ----------------
+
 echo ""
 echo -e "${YELLOW} ███▀█▄${BLUE}                               ${YELLOW} ▓██ █▄ ${BLUE}   ██          ${YELLOW} ███▀██ ${BLUE}█▄                █▄ ▄▄"
 echo -e "${YELLOW}▀███▄▄ ${BLUE} ▄█▀█▄ ▄█▀▀▄ ██ ▄▄ ▄█▀█▄ ▄█▀▀▄ ${YELLOW}▀███ ██ ${BLUE}▀▀ ██▀█▄ ▄█▀█▄ ${YELLOW}▄███    ${BLUE}██▀█▄ ▄█▀█▄ ▄█▀█▄ ██▀█▄"
 echo -e "${YELLOW} ▄▄▄ ██${BLUE} ██▀▀  ██    ▐█ █▌ ██▀▀  ██    ${YELLOW} ▀██ █▀ ${BLUE}█▄ ██ ██ ██▀▀  ${YELLOW} ███ ▄▄ ${BLUE}██ ██ ██▀▀  ██ ▄▄ ██ ██"
 echo -e "${YELLOW} ▀▀▀▀▀▀${BLUE}  ▀▀▀  ▀▀     ▀▀▀   ▀▀▀  ▀▀    ${YELLOW}  ▀▀▀▀  ${BLUE}▀▀ ▀▀▀▀   ▀▀▀  ${YELLOW}  ▀▀▀▀▀ ${BLUE}▀▀ ▀▀  ▀▀▀   ▀▀▀  ▀▀ ▀▀"
-echo ""
 echo "Server-VibeCheck ${VERSION}"
 echo -e "${RESET}---"
+
+start_spinner
+sleep 1
 
 debug "Debug mode enabled"
 debug "Running as user: $(id -un)"
 debug "Hostname: $(hostname)"
 debug "Kernel: $(uname -r)"
 
-sleep 1
-
 # ---------------- CPU, RAM, DISK ----------------
+
 debug "Checking CPU load..."
 load=$(awk '{print $1}' /proc/loadavg)
 cores=$(nproc)
@@ -173,6 +258,7 @@ fi
 
 debug "Checking disk usage..."
 EXCLUDES="tmpfs|devtmpfs|efivarfs|overlay|squashfs|proc|sysfs"
+
 while read -r fs _ _ _ pct mount; do
     if echo "${fs}" | grep -Eq "${EXCLUDES}"; then
         continue
@@ -194,7 +280,9 @@ while read -r fs _ _ _ pct mount; do
 done < <(df -P -x tmpfs -x devtmpfs | tail -n +2)
 
 # ---------------- DNS ----------------
+
 debug "Checking DNS resolution..."
+
 if command -v getent >/dev/null; then
     if getent hosts go.dev >/dev/null 2>&1; then
         ok "DNS resolution working"
@@ -206,7 +294,9 @@ else
 fi
 
 # ---------------- NTP ----------------
+
 debug "Checking NTP synchronization..."
+
 if command -v timedatectl >/dev/null; then
     if timedatectl show -p NTPSynchronized --value 2>/dev/null | grep -q yes; then
         ok "NTP synchronized"
@@ -218,7 +308,9 @@ else
 fi
 
 # ---------------- REBOOT ----------------
+
 debug "Checking reboot requirement..."
+
 if [[ -f /var/run/reboot-required ]]; then
     warn "System reboot required"
 else
@@ -226,7 +318,9 @@ else
 fi
 
 # ---------------- RAID, ZFS ----------------
+
 debug "Checking software RAID..."
+
 if [[ -f /proc/mdstat ]]; then
     if grep -qE '\[.*_.*\]' /proc/mdstat; then
         warn "Software RAID degraded"
@@ -240,6 +334,7 @@ else
 fi
 
 debug "Checking ZFS..."
+
 if command -v zpool >/dev/null; then
     if zpool status -x | grep -q "all pools are healthy"; then
         ok "ZFS pools healthy"
@@ -251,7 +346,9 @@ else
 fi
 
 # ---------------- OPEN PORTS / FIREWALL ----------------
+
 debug "Checking open ports..."
+
 if command -v ss >/dev/null; then
     ports=$(ss -tulnH | awk '{print $5}' | awk -F: '{print $NF}' | sort -n | uniq | tr '\n' ' ')
     info "Open ports: ${ports:-none}"
@@ -260,6 +357,7 @@ else
 fi
 
 debug "Checking firewall..."
+
 if command -v ufw >/dev/null; then
     ufw_status=$(ufw status 2>/dev/null || true)
 
@@ -284,7 +382,9 @@ else
 fi
 
 # ---------------- PACKAGE UPDATES ----------------
+
 debug "Checking package updates..."
+
 declare -A managers=(
     [apt]="apt list --upgradable 2>/dev/null | tail -n +2 | wc -l"
     [dnf]="dnf check-update -q 2>/dev/null | wc -l"
@@ -313,30 +413,32 @@ for pm in "${!managers[@]}"; do
 done
 
 # ---------------- SYSTEMD SERVICES ----------------
+
 debug "Checking failed Systemd services..."
-if command -v systemctl >/dev/null; then
 
-    failed_services=$(
-        systemctl list-units \
-            --state=failed \
-            --plain \
-            --no-legend \
-            2>/dev/null |
-        awk '{print $1}' || true
-    )
+if command -v systemctl >/dev/null 2>&1; then
+    if systemctl is-system-running >/dev/null 2>&1 || [[ "$(ps -p 1 -o comm= 2>/dev/null)" == "systemd" ]]; then
+        FAILED_SERVICES=$(systemctl --failed --no-legend --plain 2>/dev/null)
 
-    if [[ -z "${failed_services}" ]]; then
-        ok "All Systemd services running fine"
+        if [[ -z "${FAILED_SERVICES}" ]]; then
+            ok "Failed Systemd services: 0"
+        else
+            warn "Failed Systemd services:"
+            while IFS= read -r service; do
+                [[ -n "$service" ]] && info "  $service"
+            done <<< "$FAILED_SERVICES"
+        fi
     else
-        warn "Failed Systemd services: $(echo "${failed_services}" | tr '\n' ' ')"
+        ignore "systemd not running"
     fi
-
 else
-    ignore "systemctl not available"
+    ignore "systemctl not installed"
 fi
 
 # ---------------- DOCKER ----------------
+
 debug "Checking Docker..."
+
 if command -v docker >/dev/null; then
 
     if docker info >/dev/null 2>&1; then
@@ -360,7 +462,9 @@ else
 fi
 
 # ---------------- PODMAN ----------------
+
 debug "Checking Podman..."
+
 if command -v podman >/dev/null; then
 
     if podman info >/dev/null 2>&1; then
@@ -379,7 +483,9 @@ else
 fi
 
 # ---------------- KUBERNETES ----------------
+
 debug "Checking Kubernetes..."
+
 if command -v kubectl >/dev/null; then
 
     if kubectl get nodes --no-headers >/tmp/hd_k8s 2>/dev/null; then
@@ -406,6 +512,10 @@ else
 fi
 
 # ---------------- SUMMARY ----------------
+
+stop_spinner
+
 debug "Printing Summary..."
+
 echo "---"
 echo "Warnings: ${WARN_COUNT}"
