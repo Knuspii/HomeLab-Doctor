@@ -1,15 +1,16 @@
 <p align="center">
   <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=fff" alt="Bash" /></a>
-  <a href="https://github.com/knuspii/homelab-doctor/actions/workflows/shell.yml"><img src="https://github.com/knuspii/homelab-doctor/actions/workflows/shell.yml/badge.svg" alt="Build" /></a>
-  <a href="https://github.com/knuspii/homelab-doctor/stargazers"><img src="https://img.shields.io/github/stars/knuspii/homelab-doctor?style=social" alt="GitHub Stars" /></a>
+  <a href="https://github.com/knuspii/server-vibecheck/actions/workflows/shell.yml"><img src="https://github.com/knuspii/server-vibecheck/actions/workflows/shell.yml/badge.svg" alt="Build" /></a>
+  <a href="https://github.com/knuspii/server-vibecheck/stargazers"><img src="https://img.shields.io/github/stars/knuspii/server-vibecheck?style=social" alt="GitHub Stars" /></a>
   <br>
-  <img src="https://img.shields.io/github/license/knuspii/homelab-doctor" />
+  <img src="https://img.shields.io/github/license/knuspii/server-vibecheck" />
 </p>
 
 <div align="center">
-  <img src="assets/homelab-doctor_logo.png" width="200" height="200" alt="Preview">
+  <img src="assets/server-vibecheck_logo.png" width="400" height="400" alt="Preview">
 </div>
 
+<br>
 You quickly wanna check your server, but don't want to use 10+ tools to check everything? \
 Well this script will help you with checking the most important things.
 
@@ -23,5 +24,5 @@ Well this script will help you with checking the most important things.
 ## 📥 How to install:
 Latest Release:
 ```bash
-curl -L https://github.com/Knuspii/HomeLab-Doctor/releases/latest/download/homelab-doctor.sh -o hd && sudo install -m 755 hd /usr/local/bin/homelab-doctor && rm hd
+curl -L https://github.com/Knuspii/Server-VibeCheck/releases/latest/download/server-vibecheck.sh -o hd && sudo install -m 755 hd /usr/local/bin/server-vibecheck && rm hd
 ```

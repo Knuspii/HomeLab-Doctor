@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Bash syntax check
-        run: bash -n homelab-doctor.sh
+        run: bash -n server-vibecheck.sh
 
   shellcheck:
     name: Shellcheck
