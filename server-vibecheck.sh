@@ -133,6 +133,7 @@ Options:
   NO OPTION         Start scan
   -h, --help        Show this help message
   -l, --log <file>  Write output to log file
+  -u, --update      Update to the latest version
   -d, --debug       Enable debug output
   -v, --version     Show version
 
@@ -163,6 +164,18 @@ while [[ $# -gt 0 ]]; do
                 echo "Using default path: ${LOG_FILE}"
                 shift
             fi
+            ;;
+
+        -u|--update|--upgrade|--install)
+            echo "Updating Server-VibeCheck..."
+            if command -v curl >/dev/null 2>&1; then
+                curl -L https://github.com/Knuspii/Server-VibeCheck/releases/latest/download/server-vibecheck.sh -o svc && sudo install -m 755 svc /usr/local/bin/server-vibecheck && rm scv
+                echo "Update complete."
+            else
+                echo "Error: curl is required for updating. Please install curl and try again."
+                exit 1
+            fi
+            exit 0
             ;;
 
         -d|--debug|--verbose)

@@ -16,13 +16,14 @@ Well this script will help you with checking the most important things.
 
 ## Supports
 - Checks: CPU, RAM, Disk
-- Checks: NTP, DNS, Firewall
+- Checks: DNS, NTP, Firewall, Open-Ports
 - Checks: RAID, ZFS
-- Checks: Package update
+- Checks: Package-Updates
+- Checks: Systemd-Services
 - Checks: Docker, Podman, Kubernetes
 
 ## 📥 How to install:
 Latest Release:
 ```bash
-curl -L https://github.com/Knuspii/Server-VibeCheck/releases/latest/download/server-vibecheck.sh -o hd && sudo install -m 755 hd /usr/local/bin/server-vibecheck && rm hd
+curl -L https://github.com/Knuspii/Server-VibeCheck/releases/latest/download/server-vibecheck.sh -o svc && sudo install -m 755 svc /usr/local/bin/server-vibecheck && rm svc
 ```
