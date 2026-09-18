@@ -69,7 +69,6 @@ version() {
     echo "Made by Knuspii"
 }
 
-
 # ---------------- ARGUMENT PARSING ----------------
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -128,10 +127,11 @@ if [[ -n "${LOG_FILE}" ]]; then
 fi
 
 # ---------------- HEADER ----------------
-echo -e "${BLUE}"
-echo "____ ____ ____ _  _ ____ ____    _  _ _ ___  ____ ____ _  _ ____ ____ _  _ "
-echo "[__  |___ |__/ |  | |___ |__/ __ |  | | |__] |___ |    |__| |___ |    |_/  "
-echo "___] |___ |  \  \/  |___ |  \     \/  | |__] |___ |___ |  | |___ |___ | \_ "
+echo ""
+echo -e "${YELLOW} ███▀█▄${BLUE}                               ${YELLOW} ▓██ █▄ ${BLUE}   ██          ${YELLOW} ███▀██ ${BLUE}█▄                █▄ ▄▄"
+echo -e "${YELLOW}▀███▄▄ ${BLUE} ▄█▀█▄ ▄█▀▀▄ ██ ▄▄ ▄█▀█▄ ▄█▀▀▄ ${YELLOW}▀███ ██ ${BLUE}▀▀ ██▀█▄ ▄█▀█▄ ${YELLOW}▄███    ${BLUE}██▀█▄ ▄█▀█▄ ▄█▀█▄ ██▀█▄"
+echo -e "${YELLOW} ▄▄▄ ██${BLUE} ██▀▀  ██    ▐█ █▌ ██▀▀  ██    ${YELLOW} ▀██ █▀ ${BLUE}█▄ ██ ██ ██▀▀  ${YELLOW} ███ ▄▄ ${BLUE}██ ██ ██▀▀  ██ ▄▄ ██ ██"
+echo -e "${YELLOW} ▀▀▀▀▀▀${BLUE}  ▀▀▀  ▀▀     ▀▀▀   ▀▀▀  ▀▀    ${YELLOW}  ▀▀▀▀  ${BLUE}▀▀ ▀▀▀▀   ▀▀▀  ${YELLOW}  ▀▀▀▀▀ ${BLUE}▀▀ ▀▀  ▀▀▀   ▀▀▀  ▀▀ ▀▀"
 echo ""
 echo "Server-VibeCheck ${VERSION}"
 echo -e "${RESET}---"
@@ -195,7 +195,6 @@ done < <(df -P -x tmpfs -x devtmpfs | tail -n +2)
 
 # ---------------- DNS ----------------
 debug "Checking DNS resolution..."
-
 if command -v getent >/dev/null; then
     if getent hosts go.dev >/dev/null 2>&1; then
         ok "DNS resolution working"
@@ -208,7 +207,6 @@ fi
 
 # ---------------- NTP ----------------
 debug "Checking NTP synchronization..."
-
 if command -v timedatectl >/dev/null; then
     if timedatectl show -p NTPSynchronized --value 2>/dev/null | grep -q yes; then
         ok "NTP synchronized"
@@ -221,7 +219,6 @@ fi
 
 # ---------------- REBOOT ----------------
 debug "Checking reboot requirement..."
-
 if [[ -f /var/run/reboot-required ]]; then
     warn "System reboot required"
 else
@@ -230,7 +227,6 @@ fi
 
 # ---------------- RAID, ZFS ----------------
 debug "Checking software RAID..."
-
 if [[ -f /proc/mdstat ]]; then
     if grep -qE '\[.*_.*\]' /proc/mdstat; then
         warn "Software RAID degraded"
@@ -413,9 +409,3 @@ fi
 debug "Printing Summary..."
 echo "---"
 echo "Warnings: ${WARN_COUNT}"
-
-if [[ "${WARN_COUNT}" -eq 0 ]]; then
-    echo -e "${GREEN}Overall vibe: GOOD${RESET}"
-else
-    echo -e "${YELLOW}Overall vibe: QUESTIONABLE${RESET}"
-fi
