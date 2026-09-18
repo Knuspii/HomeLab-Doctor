@@ -16,81 +16,6 @@ WARN_COUNT=0
 DEBUG=false
 LOG_FILE=""
 
-# ---------------- SPINNER ----------------
-
-SPINNER_PID=""
-
-spinner_draw() {
-    if [[ -t 1 ]]; then
-        printf "\r\033[K%s" "${SPINNER_LINE:-Checking server...}"
-    fi
-}
-
-spinner_clear() {
-    if [[ -t 1 ]]; then
-        printf "\r\033[K"
-    fi
-}
-
-spinner() {
-    local dots=0
-
-    if [[ ! -t 1 ]]; then
-        return
-    fi
-
-    tput civis 2>/dev/null || true
-
-    while true; do
-        case "${dots}" in
-            0)
-                SPINNER_LINE="Checking server"
-                ;;
-            1)
-                SPINNER_LINE="Checking server."
-                ;;
-            2)
-                SPINNER_LINE="Checking server.."
-                ;;
-            3)
-                SPINNER_LINE="Checking server..."
-                ;;
-        esac
-
-        spinner_draw
-
-        dots=$(( (dots + 1) % 4 ))
-        sleep 0.2
-    done
-}
-
-start_spinner() {
-    if [[ -t 1 ]]; then
-        echo
-        spinner &
-        SPINNER_PID=$!
-    fi
-}
-
-stop_spinner() {
-    if [[ -n "${SPINNER_PID}" ]]; then
-        kill "${SPINNER_PID}" 2>/dev/null || true
-        wait "${SPINNER_PID}" 2>/dev/null || true
-        SPINNER_PID=""
-    fi
-
-    if [[ -t 1 ]]; then
-        spinner_clear
-        tput cnorm 2>/dev/null || true
-    fi
-}
-
-print_line() {
-    spinner_clear
-    printf "%b\n" "$1"
-    spinner_draw
-}
-
 # ---------------- FUNCTIONS ----------------
 
 ignore() {
@@ -146,6 +71,83 @@ version() {
     echo "Made by Knuspii"
 }
 
+# ---------------- SPINNER ----------------
+
+SPINNER_PID=""
+
+spinner_draw() {
+    if [[ -t 1 ]]; then
+        printf "\r\033[K%s" "${SPINNER_LINE:-Checking server...}"
+    fi
+}
+
+spinner_clear() {
+    if [[ -t 1 ]]; then
+        printf "\r\033[K"
+    fi
+}
+
+spinner() {
+    local dots=0
+    if [[ ! -t 1 ]]; then
+        return
+    fi
+
+    tput civis 2>/dev/null || true
+
+    while true; do
+        case "${dots}" in
+            0)
+                SPINNER_LINE="Checking server"
+                ;;
+            1)
+                SPINNER_LINE="Checking server."
+                ;;
+            2)
+                SPINNER_LINE="Checking server.."
+                ;;
+            3)
+                SPINNER_LINE="Checking server..."
+                ;;
+        esac
+
+        spinner_draw
+        dots=$(( (dots + 1) % 4 ))
+        sleep 0.2
+    done
+}
+
+start_spinner() {
+    if [[ -t 1 ]]; then
+        echo
+        spinner &
+        SPINNER_PID=$!
+    fi
+}
+
+stop_spinner() {
+    if [[ -n "${SPINNER_PID}" ]]; then
+        kill "${SPINNER_PID}" 2>/dev/null || true
+        wait "${SPINNER_PID}" 2>/dev/null || true
+        SPINNER_PID=""
+    fi
+
+    if [[ -t 1 ]]; then
+        printf "\r\033[K"
+        tput cnorm 2>/dev/null || true
+    fi
+}
+
+print_line() {
+    if [[ -n "${SPINNER_PID}" ]]; then
+        spinner_clear
+    fi
+    printf "%b\n" "$1"
+    if [[ -n "${SPINNER_PID}" ]]; then
+        spinner_draw
+    fi
+}
+
 # ---------------- ARGUMENT PARSING ----------------
 
 while [[ $# -gt 0 ]]; do
@@ -154,7 +156,6 @@ while [[ $# -gt 0 ]]; do
             usage
             exit 0
             ;;
-
         -l|--log)
             if [[ -n "${2:-}" && "${2}" != -* ]]; then
                 LOG_FILE="$2"
@@ -165,7 +166,6 @@ while [[ $# -gt 0 ]]; do
                 shift
             fi
             ;;
-
         -u|--update|--upgrade|--install)
             echo "Updating Server-VibeCheck..."
             if command -v curl >/dev/null 2>&1; then
@@ -177,28 +177,23 @@ while [[ $# -gt 0 ]]; do
             fi
             exit 0
             ;;
-
         -d|--debug|--verbose)
             DEBUG=true
             shift
             ;;
-
         -v|--version)
             version
             exit 0
             ;;
-
         --)
             shift
             break
             ;;
-
         -*)
             echo "Error: Unknown option: $1" >&2
             echo "Try 'server-vibecheck --help' for more information." >&2
             exit 2
             ;;
-
         *)
             echo "Error: Unexpected argument: $1" >&2
             echo "Try 'server-vibecheck --help' for more information." >&2
@@ -381,15 +376,12 @@ if command -v ufw >/dev/null; then
     else
         warn "Firewall (UFW): INACTIVE"
     fi
-
 elif command -v firewall-cmd >/dev/null; then
-
     if firewall-cmd --state >/dev/null 2>&1; then
         ok "Firewall (Firewalld): active"
     else
         warn "Firewall (Firewalld): INACTIVE"
     fi
-
 else
     ignore "Firewall: No standard manager detected"
 fi
@@ -407,7 +399,6 @@ declare -A managers=(
 
 for pm in "${!managers[@]}"; do
     if command -v "${pm}" >/dev/null; then
-
         debug "Checking updates using ${pm}..."
 
         raw_count=$(eval "${managers[${pm}]}" 2>/dev/null || echo 0)
@@ -438,8 +429,8 @@ if command -v systemctl >/dev/null 2>&1; then
         else
             warn "Failed Systemd services:"
             while IFS= read -r service; do
-                [[ -n "$service" ]] && info "  $service"
-            done <<< "$FAILED_SERVICES"
+                [[ -n "${service}" ]] && info "  ${service}"
+            done <<< "${FAILED_SERVICES}"
         fi
     else
         ignore "systemd not running"
@@ -453,9 +444,7 @@ fi
 debug "Checking Docker..."
 
 if command -v docker >/dev/null; then
-
     if docker info >/dev/null 2>&1; then
-
         running=$(docker ps -q 2>/dev/null | wc -l)
         unhealthy=$(docker ps --filter health=unhealthy -q 2>/dev/null | wc -l)
 
@@ -465,11 +454,9 @@ if command -v docker >/dev/null; then
         if [[ "${unhealthy}" -gt 0 ]]; then
             warn "Docker unhealthy containers: ${unhealthy}"
         fi
-
     else
         warn "docker installed but not accessible (daemon or permissions issue)"
     fi
-
 else
     ignore "docker not installed"
 fi
@@ -479,18 +466,14 @@ fi
 debug "Checking Podman..."
 
 if command -v podman >/dev/null; then
-
     if podman info >/dev/null 2>&1; then
-
         running=$(podman ps -q 2>/dev/null | wc -l)
 
         ok "Podman is working"
         ok "Podman containers running: ${running}"
-
     else
         warn "podman installed but not working"
     fi
-
 else
     ignore "podman not installed"
 fi
@@ -500,11 +483,8 @@ fi
 debug "Checking Kubernetes..."
 
 if command -v kubectl >/dev/null; then
-
     if kubectl get nodes --no-headers >/tmp/hd_k8s 2>/dev/null; then
-
         bad=$(grep -vc " Ready " /tmp/hd_k8s || true)
-
         rm -f /tmp/hd_k8s
 
         if [[ "${bad}" -eq 0 ]]; then
@@ -512,14 +492,10 @@ if command -v kubectl >/dev/null; then
         else
             warn "Kubernetes unhealthy nodes: ${bad}"
         fi
-
     else
-
         rm -f /tmp/hd_k8s
         warn "kubectl installed but cluster not reachable"
-
     fi
-
 else
     ignore "kubectl not installed"
 fi
@@ -527,8 +503,11 @@ fi
 # ---------------- SUMMARY ----------------
 
 stop_spinner
-
 debug "Printing Summary..."
 
 echo "---"
-echo "Warnings: ${WARN_COUNT}"
+if [[ ${WARN_COUNT} -ge 1 ]]; then
+    echo -e "${YELLOW}Warnings: ${WARN_COUNT}${RESET}"
+else
+    echo -e "${GREEN}All Good.${RESET}"
+fi
